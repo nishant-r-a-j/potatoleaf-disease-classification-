@@ -1,0 +1,822 @@
+<!DOCTYPE html>
+
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>🥔 Potato Disease Classifier</title>
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap" rel="stylesheet">
+<style>
+:root {
+--primary-color: #4CAF50; / Green /
+--secondary-color: #FF9800; / Orange */
+--background-color: #F4F6F8;
+--card-background: #FFFFFF;
+--shadow-light: 0 4px 12px rgba(0, 0, 0, 0.1);
+--modal-bg: rgba(0, 0, 0, 0.9);
+}
+
+    body {
+        font-family: 'Poppins', sans-serif;
+        margin: 0;
+        padding: 20px;
+        background-color: var(--background-color);
+        color: #333;
+        min-height: 100vh;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+    }
+
+    .header-controls {
+        width: 100%;
+        max-width: 900px;
+        display: flex;
+        justify-content: flex-end;
+        margin-bottom: 15px;
+    }
+    
+    .language-selector {
+        padding: 8px 15px;
+        border-radius: 8px;
+        border: 2px solid #ccc;
+        font-size: 1em;
+        cursor: pointer;
+        transition: border-color 0.3s;
+    }
+    .language-selector:focus {
+        outline: none;
+        border-color: var(--secondary-color);
+    }
+
+    .container {
+        max-width: 900px;
+        width: 100%;
+        background-color: var(--card-background);
+        border-radius: 15px;
+        box-shadow: var(--shadow-light);
+        padding: 30px;
+        margin-top: 0;
+    }
+
+    h1 {
+        text-align: center;
+        color: var(--primary-color);
+        margin-bottom: 30px;
+        font-size: 2.2em;
+    }
+
+    /* --- File Upload and Drop Area Styling --- */
+    #dropArea {
+        border: 3px dashed #ccc;
+        background-color: #f9f9f9;
+        width: 100%;
+        max-width: 400px;
+        height: 200px;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        margin: 20px auto;
+        border-radius: 10px;
+        cursor: pointer;
+        transition: border-color 0.3s, background-color 0.3s, transform 0.2s;
+        text-align: center;
+        font-size: 1.1em;
+        color: #777;
+    }
+
+    #dropArea:hover, #dropArea.highlight {
+        border-color: var(--secondary-color);
+        background-color: #fff3e0;
+        transform: scale(1.02);
+    }
+    
+    #imgInput { display: none; }
+    .upload-text { margin-top: 10px; font-weight: 600; }
+
+    /* --- Button Styling --- */
+    button {
+        padding: 12px 25px;
+        margin: 10px;
+        border: none;
+        border-radius: 8px;
+        font-size: 1em;
+        font-weight: 600;
+        cursor: pointer;
+        transition: background-color 0.3s, transform 0.2s, box-shadow 0.3s;
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    }
+    #openCameraBtn { background-color: #2196F3; color: white; display: block; width: 100%; max-width: 400px; margin: 10px auto 20px auto; }
+    #openCameraBtn:hover { background-color: #1976D2; transform: translateY(-2px); }
+    .predict-btn { background-color: var(--primary-color); color: white; display: block; width: 100%; max-width: 250px; margin: 20px auto; }
+    .predict-btn:hover { background-color: #388E3C; transform: translateY(-2px); }
+    .predict-btn:disabled { background-color: #ccc; cursor: not-allowed; }
+
+    /* --- Preview and Result Styling --- */
+    #preview { width: 100%; max-width: 400px; display: block; margin: 20px auto; border-radius: 10px; box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1); object-fit: cover; }
+    #preview[src=""] { display: none; }
+    #result { text-align: center; margin-top: 30px; padding: 15px; border-radius: 10px; font-size: 1.2em; font-weight: 700; min-height: 40px; color: var(--primary-color); }
+    
+    /* --- Intelligent Analysis Styling --- */
+    .analysis-box {
+        text-align: left; 
+        padding: 15px; 
+        border-radius: 10px; 
+        background-color: #f0fff0; /* Lightest Green */
+        border: 1px solid var(--primary-color);
+        color: #333;
+        font-weight: 400;
+        line-height: 1.5;
+        position: relative;
+    }
+    .analysis-box h3 {
+        margin-top: 5px; 
+        padding-right: 45px; /* Space for the speaker button on the right */
+        color: #1a791e;
+        font-weight: 600;
+        font-size: 1.3em;
+    }
+    .analysis-box strong { font-weight: 700; color: #000; }
+
+    /* Speaker Button specific style */
+    .speak-btn {
+        position: absolute;
+        top: 10px;
+        right: 15px; /* Increased right margin */
+        background: none;
+        border: none;
+        font-size: 1.5em;
+        cursor: pointer;
+        color: #2196F3;
+        padding: 0;
+        transition: transform 0.2s;
+        line-height: 1;
+    }
+    
+    /* --- LOADER STYLES --- */
+    #loader-container { display: none; flex-direction: column; align-items: center; justify-content: center; margin-top: 30px; min-height: 100px; text-align: center; }
+    .loader { border: 5px solid #f3f3f3; border-top: 5px solid var(--primary-color); border-radius: 50%; width: 40px; height: 40px; animation: spin 1s linear infinite; }
+    @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+    .loader-text { margin-top: 10px; font-size: 1em; color: #555; font-weight: 600; }
+    
+    /* --- MODAL STYLES --- */
+    #cameraModal { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background-color: var(--modal-bg); display: none; align-items: center; justify-content: center; z-index: 1000; }
+    .modal-content { background: #111; padding: 20px; border-radius: 10px; max-width: 90%; width: 450px; text-align: center; box-shadow: 0 8px 30px rgba(0, 0, 0, 0.5); position: relative; }
+    #closeModalBtn { position: absolute; top: 5px; right: 5px; background: none; border: none; color: white; font-size: 1.8em; cursor: pointer; padding: 5px 10px; line-height: 1; opacity: 0.8; transition: opacity 0.2s; }
+    #closeModalBtn:hover { opacity: 1; }
+    #videoStream, #captureDisplay { width: 100%; max-width: 400px; height: auto; border-radius: 8px; background: #000; display: block; margin: 0 auto 15px auto; }
+    .modal-controls { display: flex; justify-content: space-around; margin-top: 10px; }
+    #captureBtnModal { background-color: var(--secondary-color); color: white; flex-grow: 1; }
+    #retakeBtn { background-color: #777; color: white; flex-grow: 1; }
+    #confirmBtnModal { background-color: var(--primary-color); color: white; flex-grow: 1; margin-left: 10px; }
+    #captureDisplay, #reviewControls { display: none; }
+
+    /* --- Mobile/Responsive Adjustments --- */
+    @media (max-width: 600px) {
+        body { padding: 10px; }
+        .container { padding: 20px; }
+        h1 { font-size: 1.8em; }
+        button { padding: 10px 20px; font-size: 0.9em; }
+        #result { font-size: 1.1em; }
+        .speak-btn { font-size: 1.2em; top: 5px; right: 10px; }
+        .analysis-box h3 { padding-right: 40px; font-size: 1.2em; }
+    }
+    
+    /* NEW WARNING BOX STYLE */
+    #offlineWarning {
+        background-color: #fff3cd; 
+        border: 1px solid #ffc107;
+        padding: 10px;
+        border-radius: 8px;
+        margin-bottom: 20px;
+        font-size: 0.9em;
+        color: #856404;
+        display: none;
+        max-width: 900px;
+        width: 100%;
+    }
+    .error-message {
+        background-color: #ffcccc; 
+        border: 1px solid red;
+        padding: 15px;
+        border-radius: 8px;
+    }
+</style>
+
+
+</head>
+<body onload="setLanguage('en')">
+<div class="header-controls">
+<select id="language-select" class="language-selector" onchange="setLanguage(this.value)">
+<option value="hi">हिन्दी (Hindi)</option>
+<option value="en" selected>English (अंग्रेजी)</option>
+</select>
+</div>
+
+<div class="container">
+    <h1>🥔 <span class="lang-text" data-key="title_main">Potato Disease Classifier</span></h1>
+    
+    <!-- NEW OFFLINE WARNING MESSAGE -->
+    <div id="offlineWarning" class="lang-text" data-key="offline_tts_warning">
+    </div>
+    
+    <!-- --- 1. File Upload/Drop Area --- -->
+    <label for="imgInput" id="dropArea">
+        <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="17 8 12 3 7 8"></polyline><line x1="12" y1="3" x2="12" y2="15"></line></svg>
+        <span class="upload-text lang-text" data-key="drop_text">Tap to select or Drag and Drop Image</span>
+        <input type="file" id="imgInput" accept="image/*">
+    </label>
+    
+    <!-- --- 2. Open Camera Button --- -->
+    <button id="openCameraBtn" class="lang-text" data-key="open_camera_btn">📷 Open Camera</button>
+
+    <!-- --- 3. Image Preview --- -->
+    <img id="preview" src="" alt="Image of uploaded or captured leaf">
+    
+    <!-- --- 4. Prediction Button and Canvas (Hidden) --- -->
+    <button onclick="predict()" class="predict-btn lang-text" data-key="predict_btn">🔬 Detect Disease</button>
+    <canvas id="canvas" width="224" height="224" style="display:none;"></canvas>
+    
+    <!-- --- 5. Output (Loader and Result) --- -->
+    <div id="loader-container">
+        <div class="loader"></div>
+        <p class="loader-text lang-text" data-key="loader_msg">Analyzing image, please wait...</p>
+    </div>
+    <div id="result">
+    </div>
+</div>
+
+<!-- ======================================================= -->
+<!-- CAMERA MODAL -->
+<!-- ======================================================= -->
+<div id="cameraModal">
+    <div class="modal-content">
+        <!-- Close Button -->
+        <button id="closeModalBtn" onclick="closeModal()">×</button> 
+        
+        <!-- Camera Stream and Captured Image Slot -->
+        <video id="videoStream" width="100%" height="auto" autoplay></video>
+        <img id="captureDisplay" width="100%" height="auto" alt="Captured Photo">
+        <!-- Canvas is on main page -->
+
+        <!-- Live Capture Controls -->
+        <div id="liveControls" class="modal-controls">
+            <button id="captureBtnModal" class="lang-text" data-key="capture_btn_modal">📸 Capture</button>
+        </div>
+
+        <!-- Review/Confirm Controls -->
+        <div id="reviewControls" class="modal-controls">
+            <button id="retakeBtn" class="lang-text" data-key="retake_btn">⟳ Retake</button>
+            <button id="confirmBtnModal" class="lang-text" data-key="confirm_btn_modal">✅ Confirm</button>
+        </div>
+    </div>
+</div>
+
+
+<script>
+// --- Language Translation Data ---
+const translations = {
+    title_main: { en: "Potato Disease Classifier", hi: "आलू रोग वर्गीकरण" },
+    drop_text: { en: "Tap to select or Drag and Drop Image", hi: "फ़ोटो खींचें या ड्रॉप करें" },
+    open_camera_btn: { en: "📷 Open Camera", hi: "📷 कैमरा खोलें" },
+    capture_btn_modal: { en: "📸 Capture", hi: "📸 कैप्चर करें" },
+    retake_btn: { en: "⟳ Retake", hi: "⟳ दुबारा लें" },
+    confirm_btn_modal: { en: "✅ Confirm", hi: "✅ पुष्टि करें" },
+    predict_btn: { en: "🔬 Detect Disease", hi: "🔬 रोग का पता लगाएँ" },
+    result_text: { en: "Prediction result will appear here...", hi: "परिणाम यहाँ दिखेगा..." },
+    loader_msg: { en: "Analyzing image, please wait...", hi: "इमेज का विश्लेषण किया जा रहा है, कृपया प्रतीक्षा करें..." },
+    
+    offline_tts_warning: {
+         en: "ℹ️ **Note:** For optimal offline Hindi playback, ensure the Hindi language pack is installed on your device (usually in system accessibility settings). Otherwise, Hindi text may be read in an English accent.",
+         hi: "ℹ️ **ध्यान दें:** हिंदी में सर्वश्रेष्ठ ऑफ़लाइन पढ़ने के लिए, सुनिश्चित करें कि हिंदी भाषा पैक आपके डिवाइस पर इंस्टॉल है (आमतौर पर सिस्टम एक्सेसिबिलिटी सेटिंग्स में)।"
+    },
+    
+    // Result Strings
+    result_prediction: { en: "Prediction", hi: "रोग अनुमान" },
+    result_temp: { en: "Temperature", hi: "तापमान" },
+    result_season: { en: "Season", hi: "मौसम" },
+    result_location: { en: "Location", hi: "स्थान" },
+    result_note: { en: "Weather Note", hi: "मौसम टिप्पणी" },
+    result_unknown_loc: { en: "Unknown location", hi: "अज्ञात स्थान" },
+    
+    // Chat Analysis Keys
+    chat_analysis: { en: "Expert Analysis", hi: "विशेषज्ञ विश्लेषण" },
+    chat_solution: { en: "Recommended Solution", hi: "सुझाए गए समाधान" },
+    result_no_note: { en: "Weather note not available.", hi: "मौसम की टिप्पणी उपलब्ध नहीं है।" },
+
+    // Severity and Assessment Phrases for Hindi (Full localization)
+    severity_high: { en: "a high probability", hi: "एक उच्च संभावना" },
+    severity_strong: { en: "a strong indication", hi: "एक प्रबल संकेत" },
+    severity_potential: { en: "a potential case", hi: "एक संभावित मामला" },
+    
+    assessment_conducive: { en: "highly conducive", hi: "अत्यधिक अनुकूल" },
+    assessment_spread: { en: "The pathogen is likely to spread rapidly in this climate", hi: "इस जलवायु में रोगजनक तेज़ी से फैल सकता है" },
+    assessment_above_ideal: { en: "above the ideal range", hi: "आदर्श सीमा से ज़्यादा" },
+    assessment_below_optimal: { en: "below the optimal range", hi: "इष्टतम सीमा से कम" },
+    assessment_slow_progression: { en: "which might slow its progression unless humidity is very high", hi: "जिससे इसका फैलाव धीमा हो सकता है, बशर्ते नमी बहुत अधिक न हो" },
+    assessment_cold_inhibiting: { en: "Monitor closely, but the cool conditions may be inhibiting rapid spread", hi: "कड़ी निगरानी करें, लेकिन ठंडक तेज़ी से फैलाव को रोक सकती है" },
+    assessment_healthy_monitor: { en: "The plant appears to be maintaining its health well under the current climate conditions. Keep monitoring for early blight in this", hi: "पौधा वर्तमान जलवायु परिस्थितियों में अपना स्वास्थ्य अच्छी तरह बनाए हुए है। इस" },
+    assessment_healthy_season: { en: "season.", hi: "के मौसम में अर्ली ब्लाइट के लिए निगरानी करते रहें।" }
+};
+
+// --- TTS (Text-to-Speech) Functions ---
+const synth = window.speechSynthesis;
+
+// Function to update the button icon based on speaking state
+function updateSpeakButton(isSpeaking, buttonElement) {
+    // Speaker icon (🔊) when speaking is active, Mute icon (🔇) when stopped.
+    if (isSpeaking) {
+        buttonElement.innerHTML = '🔊'; // Speaker icon when speaking (ACTIVE)
+        buttonElement.title = buttonElement.dataset.lang === 'en' ? 'Stop Reading' : 'पढ़ना बंद करें';
+    } else {
+        buttonElement.innerHTML = '🔇'; // Mute icon when stopped (DEFAULT/IDLE)
+        buttonElement.title = buttonElement.dataset.lang === 'en' ? 'Read Analysis' : 'विश्लेषण पढ़ें';
+    }
+}
+
+// Function to toggle TTS (Made global)
+window.toggleTTS = function(buttonElement, text, langCode) {
+    if (!synth) {
+        console.error("Text-to-Speech not supported in this browser.");
+        return;
+    }
+
+    const isSpeaking = synth.speaking || synth.paused; 
+
+    // 1. If currently speaking or paused, stop it completely (CANCEL)
+    if (isSpeaking) {
+        synth.cancel();
+        updateSpeakButton(false, buttonElement);
+    } else {
+        // 2. If stopped, start a new utterance
+        const utterance = new SpeechSynthesisUtterance(text);
+        
+        // Set language code (ISO 639-1 format)
+        utterance.lang = langCode === 'hi' ? 'hi-IN' : 'en-US';
+
+        const voices = synth.getVoices();
+        const voice = voices.find(v => v.lang.startsWith(utterance.lang));
+        if (voice) {
+            utterance.voice = voice;
+        }
+
+        // Event listeners to update button state reliably
+        utterance.onstart = () => updateSpeakButton(true, buttonElement);
+        // On end, reset the button state
+        utterance.onend = () => updateSpeakButton(false, buttonElement);
+        utterance.onerror = () => updateSpeakButton(false, buttonElement);
+        
+        synth.speak(utterance);
+    }
+}
+
+// Function to stop all speech (Made global)
+window.stopAllSpeech = function() {
+    if (synth && (synth.speaking || synth.paused)) {
+        synth.cancel();
+    }
+    document.querySelectorAll('.speak-btn').forEach(btn => updateSpeakButton(false, btn));
+}
+
+
+// --- Language Functions ---
+function setLanguage(lang) {
+    stopAllSpeech(); 
+    
+    document.querySelectorAll('.lang-text').forEach(element => {
+        const key = element.getAttribute('data-key');
+        if (key && translations[key] && translations[key][lang]) {
+            element.textContent = translations[key][lang];
+        }
+    });
+    const mainTitleElement = document.querySelector('h1 span');
+    if (mainTitleElement) {
+        mainTitleElement.textContent = translations.title_main[lang];
+    }
+    document.title = translations.title_main[lang] + (lang === 'en' ? ' | Potato Disease Classifier' : ' | आलू रोग वर्गीकरण');
+    const previewImg = document.getElementById('preview');
+    if (previewImg) {
+        previewImg.alt = lang === 'en' ? "Image of uploaded or captured leaf" : "अपलोड की गई या कैप्चर की गई पत्ती की इमेज";
+    }
+    
+    // Update placeholder immediately when language changes
+    resetResultPlaceholder();
+}
+
+// --- Loader Functions (Corrected to handle asynchronous operations better) ---
+function showLoader() {
+    document.getElementById('loader-container').style.display = 'flex';
+    document.getElementById('result').style.display = 'none';
+    document.querySelector('.predict-btn').disabled = true;
+}
+
+function hideLoader(message) {
+    document.getElementById('loader-container').style.display = 'none';
+    document.getElementById('result').style.display = 'block';
+    document.querySelector('.predict-btn').disabled = false;
+    
+    if (message) {
+        document.getElementById('result').innerHTML = message;
+    }
+}
+
+// --- DOM Elements ---
+const dropArea = document.getElementById("dropArea");
+const imgInput = document.getElementById("imgInput");
+const preview = document.getElementById("preview");
+const resultDiv = document.getElementById("result"); 
+const openCameraBtn = document.getElementById("openCameraBtn");
+const offlineWarningDiv = document.getElementById("offlineWarning");
+
+// Modal Elements
+const cameraModal = document.getElementById("cameraModal");
+const videoStream = document.getElementById("videoStream");
+const captureDisplay = document.getElementById("captureDisplay");
+const canvas = document.getElementById("canvas"); 
+const captureBtnModal = document.getElementById("captureBtnModal");
+const retakeBtn = document.getElementById("retakeBtn");
+const confirmBtnModal = document.getElementById("confirmBtnModal");
+const liveControls = document.getElementById("liveControls");
+const reviewControls = document.getElementById("reviewControls");
+
+let cameraStream = null; 
+
+// --- Camera Modal Logic ---
+
+// 1. Function to start the camera stream
+async function startCamera() {
+    try {
+        cameraStream = await navigator.mediaDevices.getUserMedia({ video: true });
+        videoStream.srcObject = cameraStream;
+        videoStream.play();
+        
+        // Set modal state to Live View
+        videoStream.style.display = 'block';
+        captureDisplay.style.display = 'none';
+        liveControls.style.display = 'flex';
+        reviewControls.style.display = 'none';
+
+    } catch (err) {
+        console.error("Camera access denied:", err);
+        const currentLang = document.getElementById('language-select').value;
+        const message = currentLang === 'en' ? "Camera access denied or failed." : "कैमरा एक्सेस नहीं हो पा रहा है।";
+        resultDiv.innerHTML = `<div class="error-message" style="background-color: #ffcccc; border-color: red;"><strong>Warning:</strong> ${message}</div>`;
+        resultDiv.style.display = 'block';
+        closeModal();
+    }
+}
+
+// 2. Function to stop the stream
+function stopCamera() {
+    if (cameraStream) {
+        cameraStream.getTracks().forEach(track => track.stop());
+        cameraStream = null;
+        videoStream.srcObject = null;
+    }
+}
+
+// 3. Close Modal 
+window.closeModal = function() {
+    stopCamera();
+    cameraModal.style.display = 'none';
+}
+
+// 4. Open Modal
+openCameraBtn.addEventListener("click", () => {
+    cameraModal.style.display = 'flex';
+    startCamera();
+});
+
+// 5. Capture (Transition to Review State)
+captureBtnModal.addEventListener("click", () => {
+    // Set canvas dimensions to the video stream size for a better quality capture
+    canvas.width = videoStream.videoWidth || 224;
+    canvas.height = videoStream.videoHeight || 224;
+
+    canvas.getContext("2d").drawImage(videoStream, 0, 0, canvas.width, canvas.height);
+    
+    const capturedDataURL = canvas.toDataURL('image/jpeg');
+    captureDisplay.src = capturedDataURL;
+    
+    videoStream.style.display = 'none';
+    captureDisplay.style.display = 'block';
+    liveControls.style.display = 'none';
+    reviewControls.style.display = 'flex';
+    
+    stopCamera();
+});
+
+// 6. Retake (Transition back to Live State)
+retakeBtn.addEventListener("click", () => {
+    startCamera();
+});
+
+// 7. Confirm (Finalize Image Selection)
+confirmBtnModal.addEventListener("click", () => {
+    
+    preview.src = captureDisplay.src;
+    
+    canvas.toBlob((blob) => {
+        preview.file = blob; 
+    }, 'image/jpeg');
+
+    closeModal();
+});
+
+// --- File Input / Drag & Drop Logic ---
+imgInput.addEventListener("change", () => { if(imgInput.files.length > 0){ showPreview(imgInput.files[0]); } });
+dropArea.addEventListener("dragover", (e) => { e.preventDefault(); dropArea.classList.add('highlight'); });
+dropArea.addEventListener("dragleave", () => { dropArea.classList.remove('highlight'); });
+dropArea.addEventListener("drop", (e) => { e.preventDefault(); dropArea.classList.remove('highlight'); const file = e.dataTransfer.files[0]; showPreview(file); });
+
+function showPreview(file){
+    if (!file || !file.type.startsWith('image/')) {
+        const currentLang = document.getElementById('language-select').value;
+        const message = currentLang === 'en' ? "Please select a valid image file." : "कृपया एक मान्य इमेज फाइल चुनें।";
+        resultDiv.innerHTML = `<div class="error-message"><strong>Warning:</strong> ${message}</div>`;
+        return;
+    }
+
+    const reader = new FileReader();
+    reader.onload = function(e){ 
+        preview.src = e.target.result; 
+        preview.file = file; 
+        preview.style.display = 'block'; 
+    }
+    reader.readAsDataURL(file);
+    resetResultPlaceholder();
+}
+
+function resetResultPlaceholder() {
+    const currentLang = document.getElementById('language-select').value;
+    const initialText = translations.result_text[currentLang];
+    resultDiv.innerHTML = `<span class="lang-text" data-key="result_text">${initialText}</span>`;
+    resultDiv.style.display = 'block'; 
+    document.getElementById('loader-container').style.display = 'none'; 
+}
+
+
+// --- Prediction Logic ---
+window.predict = async function() {
+    stopAllSpeech(); 
+    let file = preview.file;
+    const currentLang = document.getElementById('language-select').value;
+    
+    if(!file || !preview.src) { 
+        const message = currentLang === 'en' ? "Please select or capture an image before predicting." : "कृपया अनुमान लगाने से पहले एक इमेज चुनें या कैप्चर करें।";
+        resetResultPlaceholder();
+        resultDiv.innerHTML = `<div class="error-message">
+                                   <h3>${currentLang === 'en' ? 'Warning: No Image' : 'चेतावनी: कोई इमेज नहीं'}</h3>
+                                   <p>${message}</p>
+                                  </div>`;
+        return; 
+    }
+    
+    showLoader(); 
+
+    const formData = new FormData();
+    formData.append("image", file);
+    
+    const getLocation = new Promise((resolve, reject) => {
+        if(navigator.geolocation) {
+            navigator.geolocation.getCurrentPosition(
+                (position) => resolve({ lat: position.coords.latitude, lon: position.coords.longitude }),
+                (err) => {
+                    console.warn("Geolocation denied or failed.", err);
+                    resolve({ lat: null, lon: null });
+                },
+                {timeout: 5000} // Added timeout for better UX
+            );
+        } else {
+            resolve({ lat: null, lon: null });
+        }
+    });
+    
+    const coords = await getLocation;
+    
+    if (coords.lat && coords.lon) {
+        formData.append("lat", coords.lat);
+        formData.append("lon", coords.lon);
+    }
+
+    sendPrediction(formData);
+}
+
+async function sendPrediction(formData){
+    let lat = formData.get("lat");
+    let lon = formData.get("lon");
+    let locationStr = "Unknown location";
+    const currentLang = document.getElementById('language-select').value;
+    
+    const t = (key) => translations[key][currentLang];
+    const translateResult = {
+        Prediction: t('result_prediction') || "Prediction",
+        Temperature: t('result_temp') || "Temperature",
+        Season: t('result_season') || "Season",
+        Location: t('result_location') || "Location",
+        Note: t('result_note') || "Weather Note",
+        Unknown: t('result_unknown_loc') || "Unknown location"
+    };
+
+    // Geolocation reverse lookup (Using OpenStreetMap Nominatim for city name)
+    if(lat && lon){
+        try {
+            const locRes = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lon}&zoom=10`);
+            const locData = await locRes.json();
+            locationStr = locData.address.city || locData.address.town || locData.address.village || locData.address.county || locData.display_name || translateResult.Unknown;
+        } catch(e){
+            console.warn("Could not fetch city name", e);
+            locationStr = translateResult.Unknown;
+        }
+    } else {
+        locationStr = translateResult.Unknown;
+    }
+
+    try {
+        // Server request
+        const response = await fetch("/predict", { method: "POST", body: formData });
+        
+        // --- NON-LEAF ERROR CHECK (HTTP 400) ---
+        if (!response.ok && response.status === 400) {
+            const errorData = await response.json();
+            if (errorData.error === "Invalid Image") {
+                const errorMsg = currentLang === 'en' ? errorData.message_en : errorData.message_hi;
+                hideLoader();
+                resetResultPlaceholder();
+                
+                // --- TTS FIX FOR NON-LEAF MESSAGE ---
+                const ttsErrorText = `${currentLang === 'en' ? 'Validation Failed, Not a Leaf. ' : 'सत्यापन विफल, पत्ती नहीं है। '}${errorMsg}. ${currentLang === 'en' ? 'Status: Image rejected by Model 1.' : 'स्थिति: मॉडल 1 द्वारा इमेज अस्वीकृत।'}`;
+
+                // Display specific Leaf Validation Failure Message with speaker button
+                resultDiv.innerHTML = `
+                    <div class="analysis-box" style="background-color: #ffcccc; border-color: red; color: #900;">
+                        <button class="speak-btn" 
+                            onclick="toggleTTS(this, this.dataset.text, '${currentLang}')" 
+                            data-text="${ttsErrorText.replace(/"/g, '')}" 
+                            data-lang="${currentLang}" 
+                            title="${currentLang === 'en' ? 'Read Warning' : 'चेतावनी पढ़ें'}">
+                            🔇
+                        </button>
+                        <h3 style="color: #900;">${currentLang === 'en' ? 'Validation Failed: Not a Leaf' : 'सत्यापन विफल: पत्ती नहीं है'}</h3>
+                        <p><strong>${errorMsg}</strong></p>
+                        <p style="font-size: 0.9em; color: #555;">${currentLang === 'en' ? 'Status: Image rejected by Model 1.' : 'स्थिति: मॉडल 1 द्वारा इमेज अस्वीकृत।'}</p>
+                    </div>`;
+                // --- END TTS FIX ---
+                
+                return; // Stop further processing
+            }
+        }
+        // ---------------------------------------------------------------------
+
+        if (!response.ok) {
+             throw new Error(`Server returned status ${response.status}`);
+        }
+
+        const data = await response.json();
+        
+        const detailedHtmlOutput = analyzeDiseaseAndWeather(data, locationStr, currentLang);
+
+        hideLoader(detailedHtmlOutput); // Hide loader on success
+
+    } catch (error) {
+        console.error("Prediction failed:", error);
+        hideLoader(); // Hide loader on failure
+        resetResultPlaceholder();
+        resultDiv.innerHTML = `<div class="error-message">
+                                   <h3>${currentLang === 'en' ? 'Error: Prediction Failed.' : 'त्रुटि: अनुमान विफल रहा।'}</h3>
+                                   <p>${error.message || (currentLang === 'en' ? 'Check server connection and Flask backend status.' : 'सर्वर कनेक्शन और फ्लास्क बैकएंड स्थिति जांचें।')}</p>
+                                  </div>`;
+    }
+}
+
+// --- INTELLIGENT ANALYSIS FUNCTION ---
+function analyzeDiseaseAndWeather(data, locationStr, currentLang) {
+    const disease = data.model2_class;
+    const confidence = data.model2_conf * 100;
+    const temp = data.weather ? data.weather.temp : null;
+    const season = data.weather ? data.weather.season : null;
+    const kb = data.disease_kb || {}; 
+    
+    const t = (key) => translations[key][currentLang];
+    
+    let analysisIntro = "";
+    let climateComment = "";
+    let ttsText = ""; 
+    
+    // --- Step 1: Severity and Confirmation ---
+    let severity_phrase_key;
+    if (confidence >= 90) {
+        severity_phrase_key = 'severity_high';
+        analysisIntro = currentLang === 'en' ? 
+            `The image analysis confirms ${t(severity_phrase_key)} of **${kb.common_name || disease}** (${confidence.toFixed(1)}%). This indicates a critical infection stage.` :
+            `इमेज विश्लेषण से **${kb.common_name || disease}** (${confidence.toFixed(1)}%) की ${t(severity_phrase_key)} की पुष्टि होती है। यह एक गंभीर संक्रमण की स्थिति है।`;
+    } else if (confidence >= 75) {
+        severity_phrase_key = 'severity_strong';
+        analysisIntro = currentLang === 'en' ? 
+            `The system detects ${t(severity_phrase_key)} of **${kb.common_name || disease}** (${confidence.toFixed(1)}%). Immediate preventive measures are necessary, but close monitoring is advised.` :
+            `सिस्टम दृढ़ता से **${kb.common_name || disease}** (${confidence.toFixed(1)}%) को दर्शाता है। तत्काल निवारक उपाय आवश्यक हैं, लेकिन गहन निगरानी की सलाह दी जाती है।`;
+    } else {
+        severity_phrase_key = 'severity_potential';
+        analysisIntro = currentLang === 'en' ? 
+            `A ${t(severity_phrase_key)} of **${kb.common_name || disease}** (${confidence.toFixed(1)}%) is detected. This appears to be an early or mild stage. Close monitoring is recommended.` :
+            `**${kb.common_name || disease}** (${confidence.toFixed(1)}%) का ${t(severity_phrase_key)} पाया गया है। यह शुरुआती या हल्का संक्रमण हो सकता है। गहन निगरानी की सलाह दी जाती है।`;
+    }
+    ttsText += `${t('result_prediction')}: ${kb.common_name || disease}. ${analysisIntro}. `;
+
+
+    // --- Step 2: Climate Integration and Expert Comment (Dynamic) ---
+    if (temp !== null && kb.favorable_temp && disease !== 'Healthy') {
+        const favorable_temp_range = kb.favorable_temp.match(/\d+/g).map(Number);
+        const low = favorable_temp_range[0];
+        const high = favorable_temp_range[1];
+        
+        if (temp >= low && temp <= high) {
+            climateComment = currentLang === 'en' ?
+                `**Environmental Assessment:** The current temperature (${temp}°C) is ${t('assessment_conducive')} to the growth of ${kb.common_name}. ${t('assessment_spread')} (${kb.favorable_climate}).` :
+                `**पर्यावरण मूल्यांकन:** वर्तमान तापमान (${temp}°C) ${kb.common_name} के विकास के लिए ${t('assessment_conducive')} है। ${t('assessment_spread')} (${kb.favorable_climate})।`;
+        } else if (temp > high) {
+            climateComment = currentLang === 'en' ?
+                `**Environmental Assessment:** The current temperature (${temp}°C) is ${t('assessment_above_ideal')} (${low}-${high}°C) for ${kb.common_name}, ${t('assessment_slow_progression')}.` :
+                `**पर्यावरण मूल्यांकन:** वर्तमान तापमान (${temp}°C) ${kb.common_name} की ${t('assessment_above_ideal')} (${low}-${high}°C) से ज़्यादा है, ${t('assessment_slow_progression')}।`;
+        } else if (temp < low) {
+            climateComment = currentLang === 'en' ?
+                `**Environmental Assessment:** The current temperature (${temp}°C) is ${t('assessment_below_optimal')} (${low}-${high}°C). ${t('assessment_cold_inhibiting')}.` :
+                `**पर्यावरण मूल्यांकन:** वर्तमान तापमान (${temp}°C) इष्टतम सीमा (${low}-${high}°C) से ${t('assessment_below_optimal')} है। ${t('assessment_cold_inhibiting')}।`;
+        }
+        if (climateComment) ttsText += climateComment.replace(/\*\*/g, '').replace(/(\([^)]+\))/g, ''); // Clean up for TTS
+    } else if (disease === 'Healthy') {
+         climateComment = currentLang === 'en' ? 
+             `**Environmental Assessment:** ${t('assessment_healthy_monitor')} ${season} ${t('assessment_healthy_season')}` :
+             `**पर्यावरण मूल्यांकन:** ${t('assessment_healthy_monitor')} ${season} ${t('assessment_healthy_season')}`;
+
+         ttsText += currentLang === 'en' ? 
+             "The plant appears to be maintaining its health well under the current climate conditions. Keep monitoring." :
+             "पौधा वर्तमान जलवायु परिस्थितियों में अपना स्वास्थ्य अच्छी तरह बनाए हुए है। निगरानी जारी रखें।";
+    }
+    
+    // --- Step 3: Solution Retrieval ---
+    const solution = currentLang === 'en' ? kb.solution_en : kb.solution_hi;
+
+    let final_solution_html;
+    let ttsSolutionText = "";
+
+    if (solution) {
+        final_solution_html = `<p>${solution}</p>`;
+        ttsSolutionText = solution;
+    } else {
+        const warningText = currentLang === 'en' ? 'Warning: Specific solutions are not configured for this disease in the knowledge base. Consult a local agricultural expert.' : 'चेतावनी: इस रोग के लिए ज्ञानकोष में विशिष्ट समाधान कॉन्फ़िगर नहीं किए गए हैं। स्थानीय कृषि विशेषज्ञ से सलाह लें।';
+        final_solution_html = `<p style="color: red; font-weight: 600;">${warningText}</p>`;
+        ttsSolutionText = warningText;
+    }
+
+    ttsText += `${t('chat_solution')}: ${ttsSolutionText}.`;
+
+    // --- Step 4: Final Output Generation (with Speak Button) ---
+    
+    let html = `
+        <div class="analysis-box">
+            <button class="speak-btn" onclick="toggleTTS(this, this.dataset.text, '${currentLang}')" data-text="${ttsText.replace(/"/g, '')}" data-lang="${currentLang}" title="${currentLang === 'en' ? 'Read Analysis' : 'विश्लेषण पढ़ें'}">
+                🔇
+            </button>
+
+            <h3>🔬 ${t('result_prediction')}: ${kb.common_name || disease} (${confidence.toFixed(1)}%)</h3>
+            
+            <p><strong>${t('chat_analysis')}:</strong> ${analysisIntro}</p>
+
+            ${climateComment ? `<p>➡️ ${climateComment}</p>` : ''}
+            
+            <hr style="border-top: 1px solid #ddd; margin: 15px 0;">
+
+            <h4>✅ ${t('chat_solution')}</h4>
+            ${final_solution_html}
+
+            <hr style="border-top: 1px solid #ddd; margin: 15px 0;">
+            
+            <p><strong>${t('result_temp')}:</strong> ${temp ? temp + '°C' : t('result_unknown_loc')}</p>
+            <p><strong>${t('result_season')}:</strong> ${season || t('result_unknown_loc')}</p>
+            <p><strong>${t('result_location')}:</strong> ${locationStr}</p>
+            <p><strong>${t('result_note')}:</strong> ${data.weather && data.weather.note ? data.weather.note : t('result_no_note')}</p>
+        </div>
+    `;
+    
+    return html;
+}
+
+// Initialize language on DOM load 
+document.addEventListener('DOMContentLoaded', () => {
+    const initialLang = document.getElementById('language-select').value;
+    setLanguage(initialLang);
+    if (synth && synth.onvoiceschanged !== undefined) {
+         // Ensure voices are loaded for accurate language selection
+    }
+    
+    // Initialize result div with placeholder text and ensure visibility
+    resetResultPlaceholder();
+});
+
+</script>
+
+
+</body>
+</html>
